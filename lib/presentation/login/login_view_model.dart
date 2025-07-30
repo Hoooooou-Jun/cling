@@ -2,6 +2,8 @@ import 'package:cling/core/secure_storage.dart';
 import 'package:cling/datasources/auth_data_source.dart';
 import 'package:cling/repositories/auth_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cling/repositories/google_auth_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // 로그인 상태값 enum(로그인 성공 여부를 따지기 위함으로, 필요할 경우에만 선언)
 enum LoginStatus { initial, loading, success, error }
@@ -45,7 +47,39 @@ class LoginViewModel extends StateNotifier<LoginState> {
 
   Future<void> googleLogin() async {
     /* 구글 로그인 핸들러 */
-    state = LoginState(status: LoginStatus.success);
+    final authResponse = await googleAuth();
+    if(authResponse.session != null && authResponse.user != null) {
+
+      //authResponse.user의 createAt을 이용하여 해당 사용자가 최초로그인(실질적 회원가입)인지 판단
+      //만약 최초 로그인이라면 추가 정보를 입력받는 페이지로 이동, 해당 값을 토대로 user테이블 생성
+
+      if(authResponse.user?.createdAt == null){
+        state = LoginState(status: LoginStatus.error);
+        return;
+      }
+      
+      final isFirstLogin = _isFirstLogin(DateTime.parse(authResponse.user!.createdAt));
+
+      if (isFirstLogin) {
+        // 추가 정보 입력 페이지로 이동 (Navigator 사용)
+        // 이때 정보를 입력 받고 돌아올 때까지 await 처리
+        // final additionalInfo = await Navigator.of(context).push<AdditionalInfo>(
+        //   MaterialPageRoute(builder: (context) => AdditionalInfoInputPage()),
+        // );
+      }
+
+      
+      state = LoginState(status: LoginStatus.success);
+    }
+  }
+
+  /// 최초 로그인 판단 예시 (createdAt과 현재 시간 차이 체크)
+  bool _isFirstLogin(DateTime? createdAt) {
+    if (createdAt == null) return false;
+
+    final difference = DateTime.now().difference(createdAt);
+    // 예: 생성 1분 이내면 최초 로그인으로 판단
+    return difference.inMinutes < 1;
   }
 }
 
