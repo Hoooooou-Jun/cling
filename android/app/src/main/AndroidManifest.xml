@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="cling"
         android:name="${applicationName}"
@@ -20,6 +22,10 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <meta-data
+              android:name="com.google.android.gms.auth.api.signin.GoogleSignInOptions.DefaultWebClientId"
+              android:value="7659641581-9j3fq2fdetc226sgffq47tcc0im4k513.apps.googleusercontent.com" 
+              />    
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
