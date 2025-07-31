@@ -1,7 +1,7 @@
 import 'package:cling/core/color.dart';
-import 'package:cling/presentation/main/%08pages/home_view.dart';
-import 'package:cling/presentation/main/%08pages/profile_view.dart';
-import 'package:cling/presentation/main/%08pages/feed_view.dart';
+import 'package:cling/presentation/main/pages/home_view.dart';
+import 'package:cling/presentation/main/pages/profile_view.dart';
+import 'package:cling/presentation/main/pages/feed_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
