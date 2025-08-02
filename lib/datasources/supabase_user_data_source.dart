@@ -27,6 +27,7 @@ class SupabaseUserDataSourceImpl implements SupabaseUserDataSource {
             'id': userId,
             'nickname': userInfo.nickname,
             'address': userInfo.address,
+            'birth': userInfo.birth!.toIso8601String().split('T').first,
             'gender': userInfo.gender,
             'bike_experience': userInfo.bikeYearLabel,
           })
