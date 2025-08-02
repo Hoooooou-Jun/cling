@@ -1,9 +1,15 @@
 import 'package:cling/core/secure_storage.dart';
 import 'package:cling/datasources/auth_data_source.dart';
+import 'package:cling/datasources/supabase_user_data_source.dart';
 import 'package:cling/repositories/auth_repository.dart';
+import 'package:cling/repositories/supabase_user_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cling/repositories/google_auth_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cling/models/simple_user_info.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 // 로그인 상태값 enum(로그인 성공 여부를 따지기 위함으로, 필요할 경우에만 선언)
 enum LoginStatus { initial, loading, success, error }
@@ -17,9 +23,13 @@ class LoginState {
 
 class LoginViewModel extends StateNotifier<LoginState> {
   final AuthRepository _repository;
+  final SupabaseUserRepository _supabaseUserRepository;
+
+  SimpleUserInfo? userInfo;
+  AsyncCallback? onRequestNavigateRegist;
 
   // 자식 클래스에서 생성자 호출 전 부모 클래스의 생성자 호출
-  LoginViewModel(this._repository): super(LoginState());
+  LoginViewModel(this._repository, this._supabaseUserRepository): super(LoginState());
 
   Future<void> login(String id, String password, bool autoLogin) async {
     // 로그인 상태 값
@@ -48,39 +58,46 @@ class LoginViewModel extends StateNotifier<LoginState> {
   Future<void> googleLogin() async {
     /* 구글 로그인 핸들러 */
     final authResponse = await googleAuth();
-    if(authResponse.session != null && authResponse.user != null) {
 
-      //authResponse.user의 createAt을 이용하여 해당 사용자가 최초로그인(실질적 회원가입)인지 판단
-      //만약 최초 로그인이라면 추가 정보를 입력받는 페이지로 이동, 해당 값을 토대로 user테이블 생성
+    if(authResponse.session == null) {
+      state = LoginState(status: LoginStatus.error);
+      return;
+    }
+    if(authResponse.user == null) {
+      state = LoginState(status: LoginStatus.error);
+      return;
+    }
 
-      if(authResponse.user?.createdAt == null){
-        state = LoginState(status: LoginStatus.error);
-        return;
-      }
-      
-      final isFirstLogin = _isFirstLogin(DateTime.parse(authResponse.user!.createdAt));
+    final bool userCheck = await _supabaseUserRepository.checkUserExist(authResponse.user?.id);
 
-      if (isFirstLogin) {
-        // 추가 정보 입력 페이지로 이동 (Navigator 사용)
-        // 이때 정보를 입력 받고 돌아올 때까지 await 처리
-        // final additionalInfo = await Navigator.of(context).push<AdditionalInfo>(
-        //   MaterialPageRoute(builder: (context) => AdditionalInfoInputPage()),
-        // );
-      }
-
-      
+    if(userCheck) {
       state = LoginState(status: LoginStatus.success);
+      return;
+    }
+
+    await requestNavigateRegist();
+    if(userInfo == null) {
+      state = LoginState(status: LoginStatus.error);
+      return;
+    } else {
+      final result = await _supabaseUserRepository.registUser(authResponse.user?.id, userInfo!);
+
+      state = result ? LoginState(status: LoginStatus.success) : LoginState(status: LoginStatus.error);
+    }
+
+
+  }
+
+  Future<void> requestNavigateRegist() async {
+    if (onRequestNavigateRegist != null) {
+      await onRequestNavigateRegist!();
     }
   }
 
-  /// 최초 로그인 판단 예시 (createdAt과 현재 시간 차이 체크)
-  bool _isFirstLogin(DateTime? createdAt) {
-    if (createdAt == null) return false;
-
-    final difference = DateTime.now().difference(createdAt);
-    // 예: 생성 1분 이내면 최초 로그인으로 판단
-    return difference.inMinutes < 1;
+  void updateSimpleUserInfo(SimpleUserInfo? info) {
+    userInfo = info;
   }
+
 }
 
 // DataSource 프로바이더
@@ -102,6 +119,18 @@ final loginViewModelProvider =
     StateNotifierProvider<LoginViewModel, LoginState>(
   (ref) {
     final repo = ref.read(authRepositoryProvider);
-    return LoginViewModel(repo);
+    final supabaseUserRepository = ref.read(supabaseUserRepositoryProvider);
+    return LoginViewModel(repo, supabaseUserRepository);
   },
 );
+
+
+
+final supabaseUserDataSourceProvider = Provider<SupabaseUserDataSource>((ref) {
+  return SupabaseUserDataSourceImpl();
+});
+
+final supabaseUserRepositoryProvider = Provider<SupabaseUserRepository>((ref) {
+  final datasource = ref.read(supabaseUserDataSourceProvider);
+  return SupabaseUserRepositoryImpl(datasource);
+});
