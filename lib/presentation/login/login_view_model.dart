@@ -72,6 +72,8 @@ class LoginViewModel extends StateNotifier<LoginState> {
 
     if(userCheck) {
       state = LoginState(status: LoginStatus.success);
+      await SecureStorage.write(key: 'access-token', value: authResponse.session!.accessToken);
+      // if (autoLogin) await SecureStorage.write(key: 'refresh-token', value: response.refreshToken!);
       return;
     }
 
@@ -82,7 +84,16 @@ class LoginViewModel extends StateNotifier<LoginState> {
     } else {
       final result = await _supabaseUserRepository.registUser(authResponse.user?.id, userInfo!);
 
-      state = result ? LoginState(status: LoginStatus.success) : LoginState(status: LoginStatus.error);
+      if(result) {
+        state = LoginState(status: LoginStatus.success);
+        await SecureStorage.write(key: 'access-token', value: authResponse.session!.accessToken);
+        return;
+      } else {
+        state = LoginState(status: LoginStatus.error);
+        return;
+      }
+
+      // state = result ? LoginState(status: LoginStatus.success) : LoginState(status: LoginStatus.error);
     }
 
 
