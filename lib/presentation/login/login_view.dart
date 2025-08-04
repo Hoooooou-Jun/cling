@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:cling/core/color.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'login_view_model.dart';
-
+import 'package:cling/presentation/login/register_view.dart';
+import 'package:cling/models/simple_user_info.dart';
 class LoginView extends ConsumerStatefulWidget {
   const LoginView({super.key});
 
@@ -20,6 +21,8 @@ class _LoginViewState extends ConsumerState<LoginView> with SingleTickerProvider
   late final AnimationController _floatingController;
   late final Animation<double> _floatingAnimation;
 
+  late LoginViewModel viewModel;
+
   @override
   void initState() {
     super.initState();
@@ -31,6 +34,17 @@ class _LoginViewState extends ConsumerState<LoginView> with SingleTickerProvider
     _floatingAnimation = Tween<double>(begin: -8, end: 8).animate(
       CurvedAnimation(parent: _floatingController, curve: Curves.easeInOut),
     );
+
+    viewModel = ref.read(loginViewModelProvider.notifier);
+
+    viewModel.onRequestNavigateRegist = () async {
+      final result = await Navigator.of(context).push<SimpleUserInfo>(
+        MaterialPageRoute(builder: (context) => RegistrationPage()),
+      );
+
+      viewModel.updateSimpleUserInfo(result);
+    };
+
   }
 
   @override
