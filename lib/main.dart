@@ -1,3 +1,5 @@
+import 'package:cling/config/app_config.dart';
+import 'package:flutter/services.dart';
 import 'package:cling/presentation/main/main_view.dart';
 import 'package:flutter/material.dart';
 import 'package:cling/presentation/login/login_view.dart';
@@ -27,11 +29,16 @@ void main() async {
   // 수정이 끝나면 터미널에 flutter pub run flutter_native_splash:create 명령어로 반영
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
+  String? flavor = await const MethodChannel('flavor').invokeMethod<String>('getFlavor');
+  Config(flavor);
+
   /**
    * 해당 부분에 권한 요청 및 기타 API 처리, 혹은 버전 및 업데이트 확인 코드 넣으면 됨.
    */
   await dotenv.load(fileName: '.env');
   supabaseInitialize();
+
 
   runApp(ProviderScope(child: MyApp()));
   FlutterNativeSplash.remove();

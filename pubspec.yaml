@@ -32,8 +32,10 @@ dependencies:
     sdk: flutter
   flutter_riverpod: ^2.0.0
   dio: ^5.0.0
+  package_info_plus: ^4.0.2
   flutter_secure_storage: ^8.0.0
   flutter_native_splash: ^2.3.1
+  flutter_flavorizr: ^2.4.1
 
 
   # The following adds the Cupertino Icons font to your application.

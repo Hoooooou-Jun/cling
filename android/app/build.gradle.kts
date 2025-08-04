@@ -1,3 +1,13 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        load(FileInputStream(keystorePropertiesFile))
+    }
+}
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -8,7 +18,33 @@ plugins {
 android {
     namespace = "com.example.cling"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
+
+    signingConfigs {
+        create("release") {
+            if (keystoreProperties.isNotEmpty()) {
+                keyAlias = keystoreProperties["keyAlias"] as? String
+                keyPassword = keystoreProperties["keyPassword"] as? String
+                storeFile = keystoreProperties["storeFile"]?.let { file(it as String) }
+                storePassword = keystoreProperties["storePassword"] as? String
+            }
+        }
+    }
+
+    flavorDimensions("app")
+
+    productFlavors {
+        create("dev") {
+            dimension = "app"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            resValue("string", "app_name", "Cling (Dev)")
+        }
+        create("prod") {
+            dimension = "app"
+            resValue("string", "app_name", "Cling")
+        }
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -37,6 +73,24 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    repositories {
+        google()
+        mavenCentral()
+        // You have to inject like this to use Kakao Map SDK
+        maven {
+            url = uri("https://devrepo.kakao.com/nexus/repository/kakaomap-releases/")
+        }
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+
 }
 
 flutter {
